@@ -1,0 +1,145 @@
+Copyright (C) 2014 Andriy Martynets <martynets@volia.ua>
+See the end of the file for license conditions.
+-------------------------------------------------------------------------------
+
+This directory contains the ob-file-browser version 1.0.
+
+The ob-file-browser is Openbox pipe menu file system browser. It represents
+filesystem tree as submenus tree, files and directories by their names and icons
+and executes viewing command for the selected file.
+
+The file browser is designed to operate even in a desktop agnostic environments.
+It does not rely on neither any desktop specific configuration manager (e.g.
+gconf) nor tools which may fall back to them (e.g. xdg-utils). Instead it
+gathers all needed information directly from system wide and user specific
+configuration files based on freedesktop.org specifications.
+
+The menu generated contains direct viewing commands of user preferred
+applications and uses icon files from current icon theme.
+
+If a file of unknown MIME type is selected or there is no viewing application
+installed for such a type then user preferred file manager is executed to
+interact with the user and select a suitable application.
+
+This script processes file names with weird symbols correctly except the new
+line symbol.
+
+Software Requirements
+---------------------
+
+This package uses bash specific extensions and requires bash shell version 4+.
+It calls file tool and thus depends on the file package.
+The file browser uses xdg-bash-functions package which is included as the
+subtree. Please see its README file for additional software requirements.
+
+Downloading
+-----------
+
+Current version of ob-file-browser can be downloaded from the link below:
+
+  https://github.com/martynets/ob-file-browser/archive/1.0.zip
+
+The latest version can be checked here:
+
+  https://github.com/martynets/ob-file-browser/releases/latest
+
+The ob-file-browser package is also available via Git access from the GitHub
+server:
+
+  https://github.com/martynets/ob-file-browser.git
+
+Installation
+------------
+
+This script is the Openbox pipe menu and needs to be installed as per the
+Openbox requirements. It can be copied to any convenient location and reference
+to it must be added to Openbox menu file which name and location default to
+$HOME/.config/openbox/menu.xml. Something similar to the following must be
+added:
+
+    <menu id="ob_file_browser" label="File System Browser"
+        execute="/path/to/script/ob-file-browser"
+            icon="/path/to/icontheme/places/16/folder.svg"/>
+
+The script receives one optional argument - path to the starting subdirectory.
+Such an argument may be added to the execute command in the example above. If no
+argument passed the script starts from the root directory.
+More information on Openbox menu configuration can be found on its wiki page:
+
+  http://openbox.org/wiki/Help:Menus
+
+Note that path to the xdg-bash-functions package is hardcoded in the script and
+they both must be located in the same directory.
+
+Configuration
+-------------
+
+The file browser script can be configured via two instances of the configuration
+file named ob-file-browser.conf. The first instance is located in the
+same directory with the script and is considered as the system wide settings.
+The second one is located in "$XDG_CONFIG_HOME" path and is considered as the
+user specific settings. The latter overrides settings of the former. Both, only
+one of them or none may be used depending on what suits the need best.
+
+The files are sourced by the script and thus must conform to the bash shell
+syntax.
+
+The files consist mostly of the xdg-bash-functions' customizable variables and
+define some XDG defaults and preferences. For more information see comments
+inside the sample configuration file and appropriate freedesktop.org
+specifications.
+
+There are two settings (variables) there specific to the file browser:
+
+    - SHOW_HIDDEN - it defines whether hidden files and directories are
+      shown in the menu tree (true) or are excluded (any other value).
+
+    - SLOW_SYSTEM - dramatically increases the script performance if set to
+      true. The side effect of this value is that all text files are not tested
+      for their exact MIME types and are reported as application/octet-stream.
+      For the end user this means that these files will be represented by the
+      default icon (application-x-executable icon in most cases) and once
+      selected passed to the default file manager to handle. The last one most
+      probably will examine the exact MIME type and pass the file to a suitable
+      application.
+
+In fact the last one option allows to decrease the time the call to file tool
+takes on directories with big amount of text files (e.g. /etc) or huge amount of
+files at all (e.g. /usr/bin). Additionally Openbox needs some extra time to
+process the pipe menu with, say, thousands of items. But if such directories are
+not in the interests or the performance of the target system is quite high it is
+advised to have the setting set to false (default value) to keep full
+functionality of the script.
+
+Bug Reporting
+-------------
+
+You can send ob-file-browser bug reports and/or any compatibility issues
+directly to the author <martynets@volia.ua>.
+
+You can also use the online bug tracking system in the GitHub ob-file-browser
+project to submit new problem reports or search for existing ones:
+
+  https://github.com/martynets/ob-file-browser/issues
+
+Change Log
+----------
+
+1.0    Initial release
+
+-------------------------------------------------------------------------------
+Copyright (C) 2014 Andriy Martynets <martynets@volia.ua>
+This file is part of ob-file-browser.
+
+Ob-file-browser is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3 of the License, or (at your option) any
+later version.
+
+Ob-file-browser is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+ob-file-browser.  If not, see <http://www.gnu.org/licenses/>.

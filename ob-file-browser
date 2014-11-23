@@ -1,0 +1,211 @@
+#! /bin/bash
+
+#
+# Openbox pipe menu file system browser version 1.0
+#
+# Copyright (C) 2014 Andriy Martynets <martynets@volia.ua>
+#--------------------------------------------------------------------------------------------------------------
+# This file is part of ob-file-browser.
+#
+# Ob-file-browser is free software: you can redistribute it and/or modify it under the terms of
+# the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+#
+# Ob-file-browser is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with ob-file-browser.
+# If not, see http://www.gnu.org/licenses/.
+#--------------------------------------------------------------------------------------------------------------
+#
+#
+# This script depends on the following packages:
+#	file (file tool)
+#
+# It doesn't rely on xdg-utils package as xdg-open and xdg-mime tools are not reliable in desktop agnostic environment.
+# Instead it uses mime-functions and icon-functions which where written based on freedesktop.org specifications.
+#
+#
+#
+# In spite of all optimisations performance is a big concern for this script.
+# The bottle neck is performance of file tool on directories with a big amount of text files (e.g. /etc).
+# If the performance is not acceptable set below variable to true. This will exclude text files tests resulting
+# in reporting them as application/octet-stream. They will be represented by the default icon and will be passed
+# to the default file manager to handle if selected.
+
+SLOW_SYSTEM=false
+
+# Hidden files normally are not shown. Set below variable to true to include them.
+
+SHOW_HIDDEN=false
+
+#--------------------------------------------------------------------------------------------------------------
+#	Functions code starts here
+#--------------------------------------------------------------------------------------------------------------
+
+# As all shell commands go quoted we need to escape just quote symbol. This is done by inline substitutions like:
+#	${file//$'"'/$'\\"'}
+#
+
+sanitize_variables()
+{
+
+ LABEL=${LABEL//$'&'/"&amp;"}
+ LABEL=${LABEL//$'"'/"&quot;"}
+ LABEL=${LABEL//$'<'/"&lt;"}
+ LABEL=${LABEL//$'>'/"&gt;"}
+
+ LABEL=${LABEL//$'_'/"__"}	# escape '_' with double '_' for openbox to process them correctly
+
+ ACTION=${ACTION//$'&'/"&amp;"}
+ ACTION=${ACTION//$'"'/"&quot;"}
+ ACTION=${ACTION//$'<'/"&lt;"}
+ ACTION=${ACTION//$'>'/"&gt;"}
+
+ ICON=${ICON//$'&'/"&amp;"}
+ ICON=${ICON//$'"'/"&quot;"}
+ ICON=${ICON//$'<'/"&lt;"}
+ ICON=${ICON//$'>'/"&gt;"}
+
+ MENUID=${MENUID//$'&'/"&amp;"}
+ MENUID=${MENUID//$'"'/"&quot;"}
+ MENUID=${MENUID//$'<'/"&lt;"}
+ MENUID=${MENUID//$'>'/"&gt;"}
+
+}
+
+
+#--------------------------------------------------------------------------------------------------------------
+#	Main script code starts here
+#--------------------------------------------------------------------------------------------------------------
+
+shopt -qs nullglob
+
+# Source xdg-bash-functions
+. "${0%/*}/xdg-bash-functions/mime-functions"	# this also includes icon-functions
+
+# Source config file before mime_functions_init call
+[ -r "${0%/*}/ob-file-browser.conf" ] && . "${0%/*}/ob-file-browser.conf"
+[ -r "$XDG_CONFIG_HOME/ob-file-browser.conf" ] && . "$XDG_CONFIG_HOME/ob-file-browser.conf"
+
+[ "$SHOW_HIDDEN" == "true" ] && shopt -qs dotglob
+
+DROP_CACHE="true"
+[ "${0%/*}/ob-file-browser.conf" -ot "$MIMECACHEFILE" ] &&\
+	[ "${0%/*}/ob-file-browser.conf" -ot "$ICONCACHEFILE" ] &&\
+	[ "$XDG_CONFIG_HOME/ob-file-browser.conf" -ot "$MIMECACHEFILE" ] &&\
+	[ "$XDG_CONFIG_HOME/ob-file-browser.conf" -ot "$ICONCACHEFILE" ] &&\
+	DROP_CACHE="false"
+
+mime_functions_init $DROP_CACHE
+
+dir="${1}"
+dir_sana="${dir//$'"'/$'\\"'}"
+fbicon_sana="${FILEBROWSERICON//$'"'/$'\\"'}"
+myself_sana="${0//$'"'/$'\\"'}"
+MENUID=""
+
+
+if [ ! -d "$dir/" ]
+then
+	echo "<openbox_pipe_menu>"
+	echo "<separator label=\"This script expects a valid path as an argument!\" />"
+	echo "</openbox_pipe_menu>"
+	exit 1
+fi
+
+if ! cd "$dir/" &> /dev/null
+then
+	echo "<openbox_pipe_menu>"
+	echo "<separator label=\"Permission denied!\" />"
+	echo "</openbox_pipe_menu>"
+	exit 1
+fi
+
+echo "<openbox_pipe_menu>"
+
+if [ -n "$FILEBROWSERNAME" ]
+then
+	LABEL="Open ${dir:-"/"} in $FILEBROWSERNAME"
+	ICON="$fbicon_sana"
+	ACTION=${FILEBROWSER//"%s"/"\"$dir_sana/\""}
+	sanitize_variables
+	echo "<item label=\"$LABEL\" icon=\"$ICON\" >"
+	echo "	<action name=\"Execute\"><command>${ACTION}</command></action>"
+	echo "</item>"
+fi
+
+#IFS=$'\n'
+IFS=$'\n\r\t ' # restore default value of internal field separator
+
+# Exclude all tests except soft and ascii (this includes encoding).
+FILEOPTIONS="--preserve-date --no-buffer --exclude compress --exclude tar --exclude elf --exclude cdf --exclude tokens --exclude apptype"
+
+# Exclude text tests on slow systems
+[ "$SLOW_SYSTEM" == "true" ] && FILEOPTIONS="$FILEOPTIONS --exclude ascii"
+
+# Replace spaces in human readable form with IFS to ensure words splitting in the command below.
+#FILEOPTIONS=${FILEOPTIONS//$' '/"$IFS"}
+
+declare -a BROWSINGDIR
+declare -a FILESLIST
+
+#BROWSINGDIR=( $( file $FILEOPTIONS --separator $'\n' --dereference --no-pad --mime-type *) )
+mapfile -t BROWSINGDIR < <(file $FILEOPTIONS --separator $'\n' --dereference --no-pad --mime-type * 2>/dev/null)
+
+#------------------------------------------------------------------------------------------------------------
+# Process subdirectories first
+#------------------------------------------------------------------------------------------------------------
+j=0 # index in FILESLIST array
+
+for (( i=0; i<${#BROWSINGDIR[*]}; i+=2))
+do
+	file=${BROWSINGDIR[i]}
+#	[ "$file" == "*" ] && break	# nullglob could eliminate this item but causes problems as array initialisation
+								# syntax used above does globbing
+	type=${BROWSINGDIR[((i+1))]:1}
+	if [ "$type" == "inode/directory" ]
+	then
+		[ -z $flag ] && flag=1 && echo "<separator />"
+		LABEL="$file"
+		ICON="$fbicon_sana"
+		ACTION="\"$myself_sana\" \"$dir_sana/${file//$'"'/$'\\"'}\""
+		MENUID="$dir/$file"
+		sanitize_variables
+		echo "<menu id=\"$MENUID\" label=\"$LABEL\" execute=\"$ACTION\" icon=\"$ICON\" />"
+	else
+		FILESLIST[$((j++))]="$file"
+		FILESLIST[$((j++))]="$type"
+	fi
+done
+
+MENUID=""
+
+#------------------------------------------------------------------------------------------------------------
+# Next process files
+#------------------------------------------------------------------------------------------------------------
+
+[ -z $flag ] &&	[ $j -gt 0 ] && echo "<separator />"
+for (( i=0; i<j; i+=2))
+do
+	file=${FILESLIST[i]}
+	type=${FILESLIST[((i+1))]}
+
+
+	LABEL="$file"
+	get_command_for_type "$type" # This sets EXEC and ICON variables for the given MIME type
+	ICON="${ICON//$'"'/$'\\"'}"
+	ACTION=${EXEC//"%s"/"\"$dir_sana/${file//$'"'/$'\\"'}\""}
+	sanitize_variables
+	echo "<item label=\"$LABEL\" icon=\"$ICON\" >"
+	echo "	<action name=\"Execute\"><command>${ACTION}</command></action>"
+	echo "</item>"
+done
+
+echo "</openbox_pipe_menu>"
+
+save_mime_cache
+
+exit 0
+#--------------------------------------------------------------------------------------------------------------

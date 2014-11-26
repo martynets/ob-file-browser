@@ -45,33 +45,35 @@ SHOW_HIDDEN=false
 #--------------------------------------------------------------------------------------------------------------
 
 # As all shell commands go quoted we need to escape just quote symbol. This is done by inline substitutions like:
-#	${file//$'"'/$'\\"'}
+#	${file//'"'/$'\\\"'}		# Note 3 back-slashes inside non-quoted expression (bash shell both v4.2 and v4.3)
+#	"${file//'"'/$'\\\"'}"		# Note 3 back-slashes inside quoted expression (bash shell v4.3)
+#	"${file//'"'/$'\\\\\\\"'}"	# Note 7 back-slashes inside quoted expression (bash shell v4.2)
 #
 
 sanitize_variables()
 {
 
- LABEL=${LABEL//$'&'/"&amp;"}
- LABEL=${LABEL//$'"'/"&quot;"}
- LABEL=${LABEL//$'<'/"&lt;"}
- LABEL=${LABEL//$'>'/"&gt;"}
+ LABEL=${LABEL//'&'/"&amp;"}
+ LABEL=${LABEL//'"'/"&quot;"}
+ LABEL=${LABEL//'<'/"&lt;"}
+ LABEL=${LABEL//'>'/"&gt;"}
 
- LABEL=${LABEL//$'_'/"__"}	# escape '_' with double '_' for openbox to process them correctly
+ LABEL=${LABEL//'_'/"__"}	# escape '_' with double '_' for openbox to process them correctly
 
- ACTION=${ACTION//$'&'/"&amp;"}
- ACTION=${ACTION//$'"'/"&quot;"}
- ACTION=${ACTION//$'<'/"&lt;"}
- ACTION=${ACTION//$'>'/"&gt;"}
+ ACTION=${ACTION//'&'/"&amp;"}
+ ACTION=${ACTION//'"'/"&quot;"}
+ ACTION=${ACTION//'<'/"&lt;"}
+ ACTION=${ACTION//'>'/"&gt;"}
 
- ICON=${ICON//$'&'/"&amp;"}
- ICON=${ICON//$'"'/"&quot;"}
- ICON=${ICON//$'<'/"&lt;"}
- ICON=${ICON//$'>'/"&gt;"}
+ ICON=${ICON//'&'/"&amp;"}
+ ICON=${ICON//'"'/"&quot;"}
+ ICON=${ICON//'<'/"&lt;"}
+ ICON=${ICON//'>'/"&gt;"}
 
- MENUID=${MENUID//$'&'/"&amp;"}
- MENUID=${MENUID//$'"'/"&quot;"}
- MENUID=${MENUID//$'<'/"&lt;"}
- MENUID=${MENUID//$'>'/"&gt;"}
+ MENUID=${MENUID//'&'/"&amp;"}
+ MENUID=${MENUID//'"'/"&quot;"}
+ MENUID=${MENUID//'<'/"&lt;"}
+ MENUID=${MENUID//'>'/"&gt;"}
 
 }
 
@@ -100,10 +102,10 @@ DROP_CACHE="true"
 
 mime_functions_init $DROP_CACHE
 
-dir="${1}"
-dir_sana="${dir//$'"'/$'\\"'}"
-fbicon_sana="${FILEBROWSERICON//$'"'/$'\\"'}"
-myself_sana="${0//$'"'/$'\\"'}"
+dir=${1}
+dir_sana=${dir//'"'/$'\\\"'}
+fbicon_sana=${FILEBROWSERICON//'"'/$'\\\"'}
+myself_sana=${0//'"'/$'\\\"'}
 MENUID=""
 
 
@@ -136,7 +138,6 @@ then
 	echo "</item>"
 fi
 
-#IFS=$'\n'
 IFS=$'\n\r\t ' # restore default value of internal field separator
 
 # Exclude all tests except soft and ascii (this includes encoding).
@@ -145,13 +146,9 @@ FILEOPTIONS="--preserve-date --no-buffer --exclude compress --exclude tar --excl
 # Exclude text tests on slow systems
 [ "$SLOW_SYSTEM" == "true" ] && FILEOPTIONS="$FILEOPTIONS --exclude ascii"
 
-# Replace spaces in human readable form with IFS to ensure words splitting in the command below.
-#FILEOPTIONS=${FILEOPTIONS//$' '/"$IFS"}
-
 declare -a BROWSINGDIR
 declare -a FILESLIST
 
-#BROWSINGDIR=( $( file $FILEOPTIONS --separator $'\n' --dereference --no-pad --mime-type *) )
 mapfile -t BROWSINGDIR < <(file $FILEOPTIONS --separator $'\n' --dereference --no-pad --mime-type * 2>/dev/null)
 
 #------------------------------------------------------------------------------------------------------------
@@ -162,15 +159,14 @@ j=0 # index in FILESLIST array
 for (( i=0; i<${#BROWSINGDIR[*]}; i+=2))
 do
 	file=${BROWSINGDIR[i]}
-#	[ "$file" == "*" ] && break	# nullglob could eliminate this item but causes problems as array initialisation
-								# syntax used above does globbing
 	type=${BROWSINGDIR[((i+1))]:1}
 	if [ "$type" == "inode/directory" ]
 	then
 		[ -z $flag ] && flag=1 && echo "<separator />"
 		LABEL="$file"
 		ICON="$fbicon_sana"
-		ACTION="\"$myself_sana\" \"$dir_sana/${file//$'"'/$'\\"'}\""
+		file_sana=${file//'"'/$'\\\"'}
+		ACTION="\"$myself_sana\" \"$dir_sana/$file_sana\""
 		MENUID="$dir/$file"
 		sanitize_variables
 		echo "<menu id=\"$MENUID\" label=\"$LABEL\" execute=\"$ACTION\" icon=\"$ICON\" />"
@@ -191,12 +187,11 @@ for (( i=0; i<j; i+=2))
 do
 	file=${FILESLIST[i]}
 	type=${FILESLIST[((i+1))]}
-
-
 	LABEL="$file"
 	get_command_for_type "$type" # This sets EXEC and ICON variables for the given MIME type
-	ICON="${ICON//$'"'/$'\\"'}"
-	ACTION=${EXEC//"%s"/"\"$dir_sana/${file//$'"'/$'\\"'}\""}
+	ICON=${ICON//'"'/$'\\\"'}
+	file_sana=${file//'"'/$'\\\"'}
+	ACTION=${EXEC//"%s"/"\"$dir_sana/$file_sana\""}
 	sanitize_variables
 	echo "<item label=\"$LABEL\" icon=\"$ICON\" >"
 	echo "	<action name=\"Execute\"><command>${ACTION}</command></action>"

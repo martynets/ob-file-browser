@@ -111,6 +111,38 @@ not in the interests or the performance of the target system is quite high it is
 advised to have the setting set to false (default value) to keep full
 functionality of the script.
 
+Default applications
+--------------------
+
+In a desktop specific environment this script may confuse by weird selection of
+default applications (e.g. Audacious as the default file manager or LibreOffice
+Writer as default plain text editor). This is caused by missing proper settings
+in freedesktop.org configuration files. Instead all settings are managed by a
+specific desktop configuration manager.
+
+To resolve this issue preferred applications must be set in mimeapps.list files.
+Unfortunately mimeapps.list files are usually almost empty. If the script does
+not find the user preferred application it uses the first found one from
+mimeinfo.cache or from mailcap files. These files are maintained by
+desktop-file-utils and mime-support packages respectively. The order in which
+applications are listed depends on set of applications installed on the target
+system and internal algorithms of the mentioned packages. It is ill-advised to
+manually edit these files as they will get overwritten at next package install
+or uninstall operation.
+
+Normally preferred applications are set from the file manager. But sometimes
+manual editing of the files might be the best way. In the above case something
+similar to the following needs to be added to $HOME/.config/mimeapps.list file:
+
+    [Default Applications]
+    inode/directory=spacefm.desktop
+    text/plain=leafpad.desktop
+
+For more details see "Association between MIME types and applications"
+specification on:
+
+  http://standards.freedesktop.org/mime-apps-spec/mime-apps-spec-1.0.html
+
 Bug Reporting
 -------------
 

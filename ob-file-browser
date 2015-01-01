@@ -104,7 +104,6 @@ mime_functions_init $DROP_CACHE
 
 dir=${1}
 dir_sana=${dir//'"'/$'\\\"'}
-fbicon_sana=${FILEBROWSERICON//'"'/$'\\\"'}
 myself_sana=${0//'"'/$'\\\"'}
 MENUID=""
 
@@ -130,7 +129,7 @@ echo "<openbox_pipe_menu>"
 if [ -n "$FILEBROWSERNAME" ]
 then
 	LABEL="Open ${dir:-"/"} in $FILEBROWSERNAME"
-	ICON="$fbicon_sana"
+	# ICON is set to FILEBROWSERICON as it hasn't been changed yet
 	ACTION=${FILEBROWSER//"%s"/"\"$dir_sana/\""}
 	sanitize_variables
 	echo "<item label=\"$LABEL\" icon=\"$ICON\" >"
@@ -164,7 +163,7 @@ do
 	then
 		[ -z $flag ] && flag=1 && echo "<separator />"
 		LABEL="$file"
-		ICON="$fbicon_sana"
+		# ICON is set to FILEBROWSERICON as it hasn't been changed yet
 		file_sana=${file//'"'/$'\\\"'}
 		ACTION="\"$myself_sana\" \"$dir_sana/$file_sana\""
 		MENUID="$dir/$file"
@@ -189,7 +188,6 @@ do
 	type=${FILESLIST[((i+1))]}
 	LABEL="$file"
 	get_command_for_type "$type" # This sets EXEC and ICON variables for the given MIME type
-	ICON=${ICON//'"'/$'\\\"'}
 	file_sana=${file//'"'/$'\\\"'}
 	ACTION=${EXEC//"%s"/"\"$dir_sana/$file_sana\""}
 	sanitize_variables

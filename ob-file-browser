@@ -1,9 +1,9 @@
 #! /bin/bash
 
 #
-# Openbox pipe menu file system browser version 1.0
+# Openbox pipe menu file system browser version 1.1
 #
-# Copyright (C) 2014 Andriy Martynets <martynets@volia.ua>
+# Copyright (C) 2014, 2016 Andriy Martynets <martynets@volia.ua>
 #--------------------------------------------------------------------------------------------------------------
 # This file is part of ob-file-browser.
 #
@@ -58,7 +58,7 @@ sanitize_variables()
  LABEL=${LABEL//'<'/"&lt;"}
  LABEL=${LABEL//'>'/"&gt;"}
 
- LABEL=${LABEL//'_'/"__"}	# escape '_' with double '_' for openbox to process them correctly
+ LABEL=${LABEL//'_'/"__"}	# escape '_' with double '_' for Openbox to process it correctly
 
  ACTION=${ACTION//'&'/"&amp;"}
  ACTION=${ACTION//'"'/"&quot;"}
@@ -85,20 +85,28 @@ sanitize_variables()
 shopt -qs nullglob
 
 # Source xdg-bash-functions
-. "${0%/*}/xdg-bash-functions/mime-functions"	# this also includes icon-functions
+. mime-functions	# this also includes icon-functions
 
 # Source config file before mime_functions_init call
-[ -r "${0%/*}/ob-file-browser.conf" ] && . "${0%/*}/ob-file-browser.conf"
-[ -r "$XDG_CONFIG_HOME/ob-file-browser.conf" ] && . "$XDG_CONFIG_HOME/ob-file-browser.conf"
+DROP_CACHE="false"
+IFS=$':'
+for idir in $XDG_CONFIG_DIRS
+do
+	if [ -r "$idir/ob-file-browser.conf" ]
+	then
+		. "$idir/ob-file-browser.conf"
+		[ "$idir/ob-file-browser.conf" -nt "$MIMECACHEFILE" ] && DROP_CACHE="true"
+		[ "$idir/ob-file-browser.conf" -nt "$ICONCACHEFILE" ] && DROP_CACHE="true"
+	fi
+done
+if [ -r "$XDG_CONFIG_HOME/ob-file-browser.conf" ]
+then
+	. "$XDG_CONFIG_HOME/ob-file-browser.conf"
+	[ "$XDG_CONFIG_HOME/ob-file-browser.conf" -nt "$MIMECACHEFILE" ] && DROP_CACHE="true"
+	[ "$XDG_CONFIG_HOME/ob-file-browser.conf" -nt "$ICONCACHEFILE" ] && DROP_CACHE="true"
+fi
 
 [ "$SHOW_HIDDEN" == "true" ] && shopt -qs dotglob
-
-DROP_CACHE="true"
-[ "${0%/*}/ob-file-browser.conf" -ot "$MIMECACHEFILE" ] &&\
-	[ "${0%/*}/ob-file-browser.conf" -ot "$ICONCACHEFILE" ] &&\
-	[ "$XDG_CONFIG_HOME/ob-file-browser.conf" -ot "$MIMECACHEFILE" ] &&\
-	[ "$XDG_CONFIG_HOME/ob-file-browser.conf" -ot "$ICONCACHEFILE" ] &&\
-	DROP_CACHE="false"
 
 mime_functions_init $DROP_CACHE
 

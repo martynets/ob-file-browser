@@ -1,8 +1,8 @@
-Copyright (C) 2014 Andriy Martynets <martynets@volia.ua>
+Copyright (C) 2014, 2016 Andriy Martynets <martynets@volia.ua>
 See the end of the file for license conditions.
 -------------------------------------------------------------------------------
 
-This directory contains the ob-file-browser version 1.0.
+This directory contains the ob-file-browser version 1.1.
 
 The ob-file-browser is Openbox pipe menu file system browser. It represents
 filesystem tree as submenus tree, files and directories by their names and icons
@@ -27,19 +27,22 @@ line symbol.
 Software Requirements
 ---------------------
 
-This package uses bash specific extensions and requires bash shell version 4+.
-It calls file tool and thus depends on the file package.
-The file browser uses xdg-bash-functions package which is included as the
-subtree. Please see its README file for additional software requirements.
+The ob-file-browser script depends on the following software packages:
+- the bash version 4.0+
+- the file utility (file package)
+- xdg-bash-functions package (https://github.com/martynets/xdg-bash-functions)
+
+The last one package must be manually installed from the repository somewhere in
+your PATH. Please see its README file for additional information.
 
 Downloading
 -----------
 
 Current version of ob-file-browser can be downloaded from the link below:
 
-  https://github.com/martynets/ob-file-browser/archive/1.0.zip
+  https://github.com/martynets/ob-file-browser/archive/master.zip
 
-The latest version can be checked here:
+The latest released version can be checked here:
 
   https://github.com/martynets/ob-file-browser/releases/latest
 
@@ -68,18 +71,14 @@ More information on Openbox menu configuration can be found on its wiki page:
 
   http://openbox.org/wiki/Help:Menus
 
-Note that path to the xdg-bash-functions package is hardcoded in the script and
-they both must be located in the same directory.
-
 Configuration
 -------------
 
-The file browser script can be configured via two instances of the configuration
-file named ob-file-browser.conf. The first instance is located in the
-same directory with the script and is considered as the system wide settings.
-The second one is located in "$XDG_CONFIG_HOME" path and is considered as the
-user specific settings. The latter overrides settings of the former. Both, only
-one of them or none may be used depending on what suits the need best.
+The file browser script can be configured via configuration file named
+ob-file-browser.conf. It is searched in directories listed in the
+XDG_CONFIG_DIRS variable first for system wide settings. Next it is searched
+in the path from XDG_CONFIG_HOME variable and is considered as the
+user specific settings. The latter overrides settings of the former.
 
 The files are sourced by the script and thus must conform to the bash shell
 syntax.
@@ -157,10 +156,16 @@ project to submit new problem reports or search for existing ones:
 Change Log
 ----------
 
+1.1    The xdg-bash-functions sub-tree is replaced with call to installed
+       version, configuration file format updated to suit the latest version
+       of the xdg-bash-functions, configuration file search is done in
+       XDG_CONFIG_DIRS first for system wide settings and next in
+       XDG_CONFIG_HOME for user specific settings
+
 1.0    Initial release
 
 -------------------------------------------------------------------------------
-Copyright (C) 2014 Andriy Martynets <martynets@volia.ua>
+Copyright (C) 2014, 2016 Andriy Martynets <martynets@volia.ua>
 This file is part of ob-file-browser.
 
 Ob-file-browser is free software; you can redistribute it and/or modify it
